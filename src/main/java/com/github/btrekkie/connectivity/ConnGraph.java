@@ -255,11 +255,20 @@ public class ConnGraph {
         return lowerHead;
     }
 
+    /** Equivalent implementation is contractually guaranteed. */
+    private void augmentAncestors(EulerTourNode node) {
+        for (EulerTourNode parent = node; parent != null; parent = parent.parent) {
+            if (!parent.augment()) {
+                break;
+            }
+        }
+    }
+
     /**
      * Equivalent implementation is contractually guaranteed.
      *
-     * This method is useful for when an EulerTourVertex's lists (graphListHead or forestListHead) or arbitrary visit
-     * change, as these affect the hasGraphEdge and hasForestEdge augmentations.
+     * This method is useful for when an EulerTourVertex's lists (graphListHead or forestListHead) change, as this
+     * affects the hasGraphEdge and hasForestEdge augmentations.
      */
     private void augmentAncestorFlags(EulerTourNode node) {
         for (EulerTourNode parent = node; parent != null; parent = parent.parent) {
@@ -480,8 +489,7 @@ public class ConnGraph {
             if (max.vertex.arbitraryVisit == max) {
                 EulerTourNode min = root.min();
                 max.vertex.arbitraryVisit = min;
-                augmentAncestorFlags(min);
-                augmentAncestorFlags(max);
+                augmentAncestors(min);
             }
             root = max.remove();
             EulerTourNode[] splitRoots = root.split(vertex2.arbitraryVisit);
@@ -521,8 +529,8 @@ public class ConnGraph {
         if (firstNode.vertex.arbitraryVisit == firstNode) {
             EulerTourNode successor = secondNodeSuccessor;
             firstNode.vertex.arbitraryVisit = successor;
-            augmentAncestorFlags(firstNode);
-            augmentAncestorFlags(successor);
+            augmentAncestors(firstNode);
+            augmentAncestors(successor);
         }
 
         EulerTourNode root = firstNode.root();
@@ -573,12 +581,14 @@ public class ConnGraph {
 
         if (vertex1.arbitraryVisit.root() == vertex2.arbitraryVisit.root()) {
             addToGraphLinkedLists(edge);
+            augmentAncestorFlags(vertex1.arbitraryVisit);
+            augmentAncestorFlags(vertex2.arbitraryVisit);
         } else {
             addToForestLinkedLists(edge);
+            augmentAncestorFlags(vertex1.arbitraryVisit);
+            augmentAncestorFlags(vertex2.arbitraryVisit);
             edge.eulerTourEdge = addForestEdge(vertex1, vertex2);
         }
-        augmentAncestorFlags(vertex1.arbitraryVisit);
-        augmentAncestorFlags(vertex2.arbitraryVisit);
 
         addToEdgeMap(edge, info1, connVertex2);
         addToEdgeMap(edge, info2, connVertex1);
