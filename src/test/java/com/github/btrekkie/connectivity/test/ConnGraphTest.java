@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import com.github.btrekkie.connectivity.Augmentation;
 import com.github.btrekkie.connectivity.ConnGraph;
 import com.github.btrekkie.connectivity.ConnVertex;
 
@@ -21,7 +22,7 @@ import com.github.btrekkie.connectivity.ConnVertex;
  * behavior more predictable. That way, there are consistent test results, and test failures are easier to debug.
  */
 public class ConnGraphTest {
-    /** Tests ConnectivityGraph on a small forest and a binary tree-like subgraph. */
+    /** Tests ConnGraph on a small forest and a binary tree-like subgraph. */
     @Test
     public void testForestAndBinaryTree() {
         ConnGraph graph = new ConnGraph();
@@ -117,7 +118,7 @@ public class ConnGraphTest {
         assertTrue(graph.connected(vertices.get(991), vertices.get(999)));
     }
 
-    /** Tests ConnectivityGraph on a small graph that has cycles. */
+    /** Tests ConnGraph on a small graph that has cycles. */
     @Test
     public void testSmallCycles() {
         ConnGraph graph = new ConnGraph();
@@ -148,7 +149,7 @@ public class ConnGraphTest {
         assertFalse(graph.connected(vertex1, vertex4));
     }
 
-    /** Tests ConnectivityGraph on a grid-based graph. */
+    /** Tests ConnGraph on a grid-based graph. */
     @Test
     public void testGrid() {
         ConnGraph graph = new ConnGraph();
@@ -412,7 +413,7 @@ public class ConnGraphTest {
 
     /**
      * Tests a graph in the style used to prove lower bounds on the performance of dynamic connectivity, as presented in
-     * https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-851-advanced-data-structures-spring-2012/lecture-videos/session-21-dynamic-connectivity-lower-bound/ .
+     * https://ocw.mit.edu/courses/6-851-advanced-data-structures-spring-2012/resources/session-21-dynamic-connectivity-lower-bound/ .
      */
     @Test
     public void testPermutations() {
@@ -876,7 +877,7 @@ public class ConnGraphTest {
         assertNull(graph.getComponentAugmentation(arkansas));
     }
 
-    /** Tests ConnectivityGraph on the graph for a dodecahedron. */
+    /** Tests ConnGraph on the graph for a dodecahedron. */
     @Test
     public void testDodecahedron() {
         ConnGraph graph = new ConnGraph();
@@ -955,6 +956,107 @@ public class ConnGraphTest {
         graph.optimize();
         assertTrue(graph.connected(vertex7, vertex7));
         assertFalse(graph.connected(vertex1, vertex2));
+    }
+
+    /** Tests that ConnGraph correctly distinguishes between null augmentations and the absense of a augmentation. */
+    @Test
+    public void testNullAugmentation() {
+        // We use an augmentation that sums Integers, but uses null in place of 2
+        Augmentation augmentation = new Augmentation() {
+            @Override
+            public Object combine(Object value1, Object value2) {
+                int sum = 0;
+                if (value1 != null) {
+                    sum += (Integer)value1;
+                } else {
+                    sum += 2;
+                }
+                if (value2 != null) {
+                    sum += (Integer)value2;
+                } else {
+                    sum += 2;
+                }
+
+                if (sum != 2) {
+                    return sum;
+                } else {
+                    return null;
+                }
+            }
+        };
+
+        ConnGraph graph = new ConnGraph(augmentation);
+        Random random = new Random(6170);
+        List<ConnVertex> vertices = new ArrayList<ConnVertex>(1000);
+        for (int i = 0; i < 1000; i++) {
+            vertices.add(new ConnVertex(random));
+        }
+        assertNull(graph.getComponentAugmentation(vertices.get(120)));
+        assertFalse(graph.componentHasAugmentation(vertices.get(120)));
+
+        // All vertices are augmented with +/- 1. The goal is to have a lot of intermediate sums that are equal to 2.
+        for (int i = 0; i < 500; i++) {
+            assertNull(graph.setVertexAugmentation(vertices.get(i), i % 2 == 0 ? 1 : -1));
+        }
+
+        // Create a chain 0 - 1 - 2 - ... - 999, adding the edges in a weird order
+        for (int i = 0; i < 11; i++) {
+            for (int j = i; j + 1 < 1000; j += 11) {
+                assertTrue(graph.addEdge(vertices.get(j), vertices.get(j + 1)));
+            }
+        }
+        assertEquals(0, graph.getComponentAugmentation(vertices.get(42)));
+        assertTrue(graph.removeEdge(vertices.get(700), vertices.get(701)));
+        assertEquals(0, graph.getComponentAugmentation(vertices.get(300)));
+        assertNull(graph.getComponentAugmentation(vertices.get(999)));
+        assertFalse(graph.componentHasAugmentation(vertices.get(999)));
+        assertTrue(graph.addEdge(vertices.get(700), vertices.get(701)));
+
+        for (int i = 500; i < 1000; i++) {
+            assertNull(graph.setVertexAugmentation(vertices.get(i), i % 2 == 0 ? 1 : -1));
+        }
+        assertEquals(0, graph.getComponentAugmentation(vertices.get(3)));
+        assertEquals(-1, graph.setVertexAugmentation(vertices.get(187), null));
+        assertNull(graph.getVertexAugmentation(vertices.get(187)));
+        assertTrue(graph.vertexHasAugmentation(vertices.get(187)));
+        assertNull(graph.setVertexAugmentation(vertices.get(187), null));
+        assertNull(graph.getVertexAugmentation(vertices.get(187)));
+        assertTrue(graph.vertexHasAugmentation(vertices.get(187)));
+        assertEquals(1, graph.removeVertexAugmentation(vertices.get(74)));
+        assertNull(graph.getVertexAugmentation(vertices.get(74)));
+        assertFalse(graph.vertexHasAugmentation(vertices.get(74)));
+        assertNull(graph.getComponentAugmentation(vertices.get(915)));
+        assertTrue(graph.componentHasAugmentation(vertices.get(915)));
+
+        assertTrue(graph.removeEdge(vertices.get(100), vertices.get(101)));
+        assertEquals(0, graph.getComponentAugmentation(vertices.get(16)));
+        assertTrue(graph.componentHasAugmentation(vertices.get(16)));
+        assertNull(graph.getComponentAugmentation(vertices.get(505)));
+        assertTrue(graph.componentHasAugmentation(vertices.get(505)));
+        assertEquals(1, graph.setVertexAugmentation(vertices.get(620), 0));
+        assertEquals(0, graph.setVertexAugmentation(vertices.get(620), 0));
+        assertEquals(1, graph.getComponentAugmentation(vertices.get(505)));
+        assertNull(graph.setVertexAugmentation(vertices.get(74), null));
+        assertNull(graph.getVertexAugmentation(vertices.get(74)));
+        assertTrue(graph.vertexHasAugmentation(vertices.get(74)));
+
+        for (int i = 0; i + 2 < 1000; i += 2) {
+            assertTrue(graph.addEdge(vertices.get(i), vertices.get(i + 2)));
+        }
+
+        // Remove the chain edges 0 - 1 - 2 - ... - 999 in a weird order
+        for (int i = 0; i < 13; i++) {
+            for (int j = i; j + 1 < 1000; j += 13) {
+                assertEquals(j != 100, graph.removeEdge(vertices.get(j), vertices.get(j + 1)));
+            }
+        }
+        assertEquals(500, graph.getComponentAugmentation(vertices.get(876)));
+
+        for (int i = 0; i < 1000; i++) {
+            graph.removeVertexAugmentation(vertices.get(i));
+        }
+        assertNull(graph.getComponentAugmentation(vertices.get(444)));
+        assertFalse(graph.componentHasAugmentation(vertices.get(444)));
     }
 
     /** Tests the zero-argument ConnVertex constructor. */

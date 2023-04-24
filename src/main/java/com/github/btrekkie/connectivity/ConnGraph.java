@@ -33,10 +33,10 @@ import java.util.Map;
  * parameter, we make usage of the ConnGraph class more convenient and less confusing in the common case.
  */
 /* ConnGraph is implemented using a data structure described in
- * http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.89.919&rep=rep1&type=pdf (Holm, de Lichtenberg, and Thorup
- * (1998): Poly-Logarithmic Deterministic Fully-Dynamic Algorithms for Connectivity, Minimum Spanning Tree, 2-Edge, and
- * Biconnectivity). However, ConnGraph does not include the optimization of using a B-tree in the top level, so queries
- * take O(log N) time rather than O(log N / log log N) time.
+ * https://dl.acm.org/doi/pdf/10.1145/276698.276715 (Holm, de Lichtenberg, and Thorup (1998): Poly-Logarithmic
+ * Deterministic Fully-Dynamic Algorithms for Connectivity, Minimum Spanning Tree, 2-Edge, and Biconnectivity). However,
+ * ConnGraph does not include the optimization of using a B-tree in the top level, so queries take O(log N) time rather
+ * than O(log N / log log N) time.
  *
  * This implementation is actually based on a slightly modified description of the data structure given in
  * https://ocw.mit.edu/courses/6-851-advanced-data-structures-spring-2012/resources/session-20-dynamic-graphs-ii/ . The
@@ -79,19 +79,19 @@ import java.util.Map;
  * we add the qualifier "with high probability."
  *
  * This claim is based on information presented in
- * https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-851-advanced-data-structures-spring-2012/lecture-videos/session-10-dictionaries/ .
- * According to that video, in a hash map with chaining, if the hash function is totally random, then the longest chain
- * length is O(log N / log log N) with high probability. A totally random hash function is a slightly different concept
- * than having ConnVertex.hashCode() return a random value, due to the particular definition of "hash function" used in
- * the video. Nevertheless, the analysis is the same. A random hashCode() implementation ultimately results in
- * independently hashing each entry to a random bucket, which is equivalent to a totally random hash function.
+ * https://ocw.mit.edu/courses/6-851-advanced-data-structures-spring-2012/resources/session-10-dictionaries/ . According
+ * to that video, in a hash map with chaining, if the hash function is totally random, then the longest chain length is
+ * O(log N / log log N) with high probability. A totally random hash function is a slightly different concept than
+ * having ConnVertex.hashCode() return a random value, due to the particular definition of "hash function" used in the
+ * video. Nevertheless, the analysis is the same. A random hashCode() implementation ultimately results in independently
+ * hashing each entry to a random bucket, which is equivalent to a totally random hash function.
  *
  * However, the claim depends on certain features of the implementation of HashMap, gleaned from reading the source
  * code. In particular, it assumes that HashMap resolves collisions using chaining. (Newer versions of Java sometimes
  * store the entries that hash to the same bucket in binary search trees rather than linked lists, but this can't hurt
  * the asymptotic performance.) Note that the implementation of HashMap transforms the return value of hashCode(), by
  * "spreading" the higher-order bits to lower-order positions. However, this transform is a permutation of the integers.
- * If the input to a transform is selected uniformly at random, and the transform is a permutation, than the output also
+ * If the input to a transform is selected uniformly at random, and the transform is a permutation, then the output also
  * has a uniform random distribution.
  */
 public class ConnGraph {
@@ -149,7 +149,7 @@ public class ConnGraph {
         this.augmentation = augmentation;
     }
 
-    /** Equivalent implementation is contractual. */
+    /** Equivalent implementation is contractually guaranteed. */
     private void assertIsAugmented() {
         if (augmentation == null) {
             throw new RuntimeException(
@@ -256,7 +256,7 @@ public class ConnGraph {
     }
 
     /**
-     * Equivalent implementation is contractual.
+     * Equivalent implementation is contractually guaranteed.
      *
      * This method is useful for when an EulerTourVertex's lists (graphListHead or forestListHead) or arbitrary visit
      * change, as these affect the hasGraphEdge and hasForestEdge augmentations.
@@ -477,8 +477,8 @@ public class ConnGraph {
         EulerTourNode max = root.max();
         if (max.vertex != vertex2) {
             // Reroot
-            EulerTourNode min = root.min();
             if (max.vertex.arbitraryVisit == max) {
+                EulerTourNode min = root.min();
                 max.vertex.arbitraryVisit = min;
                 augmentAncestorFlags(min);
                 augmentAncestorFlags(max);
@@ -517,8 +517,9 @@ public class ConnGraph {
             secondNode = edge.visit1;
         }
 
+        EulerTourNode secondNodeSuccessor = secondNode.successor();
         if (firstNode.vertex.arbitraryVisit == firstNode) {
-            EulerTourNode successor = secondNode.successor();
+            EulerTourNode successor = secondNodeSuccessor;
             firstNode.vertex.arbitraryVisit = successor;
             augmentAncestorFlags(firstNode);
             augmentAncestorFlags(successor);
@@ -527,7 +528,7 @@ public class ConnGraph {
         EulerTourNode root = firstNode.root();
         EulerTourNode[] firstSplitRoots = root.split(firstNode);
         EulerTourNode before = firstSplitRoots[0];
-        EulerTourNode[] secondSplitRoots = firstSplitRoots[1].split(secondNode.successor());
+        EulerTourNode[] secondSplitRoots = firstSplitRoots[1].split(secondNodeSuccessor);
         before.concatenate(secondSplitRoots[1]);
         firstNode.removeWithoutGettingRoot();
     }
