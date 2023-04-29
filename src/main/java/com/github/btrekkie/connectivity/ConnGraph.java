@@ -486,12 +486,12 @@ public class ConnGraph {
         EulerTourNode max = root.max();
         if (max.vertex != vertex2) {
             // Reroot
+            root = max.remove();
             if (max.vertex.arbitraryVisit == max) {
                 EulerTourNode min = root.min();
                 max.vertex.arbitraryVisit = min;
                 augmentAncestors(min);
             }
-            root = max.remove();
             EulerTourNode[] splitRoots = root.split(vertex2.arbitraryVisit);
             root = splitRoots[1].concatenate(splitRoots[0]);
             EulerTourNode newNode = new EulerTourNode(vertex2, root.augmentationFunc);
